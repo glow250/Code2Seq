@@ -21,15 +21,15 @@
 #   recommended to use a multi-core machine for the preprocessing 
 #   step and set this value to the number of cores.
 # PYTHON - python3 interpreter alias.
-TRAIN_DIR=my_training_dir
-VAL_DIR=my_val_dir
-TEST_DIR=my_test_dir
-DATASET_NAME=my_dataset
+TRAIN_DIR=/home/glow250/p4p/raw_java/java-med/fake_training
+VAL_DIR=/home/glow250/p4p/raw_java/java-med/fake_validation
+TEST_DIR=/home/glow250/p4p/raw_java/java-large/test
+DATASET_NAME=large_test_preprocess_c2s
 MAX_DATA_CONTEXTS=1000
 MAX_CONTEXTS=200
 SUBTOKEN_VOCAB_SIZE=186277
 TARGET_VOCAB_SIZE=26347
-NUM_THREADS=64
+NUM_THREADS=1
 PYTHON=python3
 ###########################################################
 
@@ -67,6 +67,6 @@ ${PYTHON} preprocess.py --train_data ${TRAIN_DATA_FILE} --test_data ${TEST_DATA_
     
 # If all went well, the raw data files can be deleted, because preprocess.py creates new files 
 # with truncated and padded number of paths for each example.
-rm ${TRAIN_DATA_FILE} ${VAL_DATA_FILE} ${TEST_DATA_FILE} ${TARGET_HISTOGRAM_FILE} ${SOURCE_SUBTOKEN_HISTOGRAM} \
-  ${NODE_HISTOGRAM_FILE}
+#rm ${TRAIN_DATA_FILE} ${VAL_DATA_FILE} ${TEST_DATA_FILE} ${TARGET_HISTOGRAM_FILE} ${SOURCE_SUBTOKEN_HISTOGRAM} \
+#  ${NODE_HISTOGRAM_FILE}
 

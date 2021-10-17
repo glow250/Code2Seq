@@ -1,4 +1,5 @@
 import _pickle as pickle
+import csv
 import os
 import time
 
@@ -169,10 +170,19 @@ class Model:
         predicted_file_name = model_dirname + '/pred.txt'
         if not os.path.exists(model_dirname):
             os.makedirs(model_dirname)
+        try:
+            location = str.split(self.config.TEST_PATH, '/')
+            location = location[len(location) - 2]
+        except:
+            location = "skip"
 
         with open(model_dirname + '/log.txt', 'w') as output_file, open(ref_file_name, 'w') as ref_file, open(
                 predicted_file_name,
-                'w') as pred_file:
+                'w') as pred_file, open(model_dirname + '/' + location + '_c2s_log.csv', 'w') as output_csv:
+            headers = ['Original Name', 'Predicted Name', 'Correct?', 'Original Subtokens', 'Predicted Subtokens',
+                       'True Positives', 'False Positives', 'False Negatives']
+            csv_writer = csv.writer(output_csv)
+            csv_writer.writerow(headers)
             num_correct_predictions = 0 if self.config.BEAM_WIDTH == 0 \
                 else np.zeros([self.config.BEAM_WIDTH], dtype=np.int32)
             total_predictions = 0
@@ -207,9 +217,13 @@ class Model:
                     num_correct_predictions = self.update_correct_predictions(num_correct_predictions, output_file,
                                                                               zip(true_target_strings,
                                                                                   predicted_strings))
-                    true_positive, false_positive, false_negative = self.update_per_subtoken_statistics(
-                        zip(true_target_strings, predicted_strings),
-                        true_positive, false_positive, false_negative)
+                    true_positive, false_positive, false_negative = self.update_per_subtoken_statistics(csv_writer,
+                                                                                                        zip(
+                                                                                                            true_target_strings,
+                                                                                                            predicted_strings),
+                                                                                                        true_positive,
+                                                                                                        false_positive,
+                                                                                                        false_negative)
 
                     total_predictions += len(true_target_strings)
                     total_prediction_batches += 1
@@ -237,26 +251,29 @@ class Model:
 
     def update_correct_predictions(self, num_correct_predictions, output_file, results):
         for original_name, predicted in results:
-            original_name_parts = original_name.split(Common.internal_delimiter) # list
-            filtered_original = Common.filter_impossible_names(original_name_parts) # list
+            original_name_parts = original_name.split(Common.internal_delimiter)  # list
+            filtered_original = Common.filter_impossible_names(original_name_parts)  # list
             predicted_first = predicted
             if self.config.BEAM_WIDTH > 0:
                 predicted_first = predicted[0]
-            filtered_predicted_first_parts = Common.filter_impossible_names(predicted_first) # list
-
+            filtered_predicted_first_parts = Common.filter_impossible_names(predicted_first)  # list
             if self.config.BEAM_WIDTH == 0:
                 output_file.write('Original: ' + Common.internal_delimiter.join(original_name_parts) +
-                                  ' , predicted 1st: ' + Common.internal_delimiter.join(filtered_predicted_first_parts) + '\n')
-                if filtered_original == filtered_predicted_first_parts or Common.unique(filtered_original) == Common.unique(
-                        filtered_predicted_first_parts) or ''.join(filtered_original) == ''.join(filtered_predicted_first_parts):
+                                  ' , predicted 1st: ' + Common.internal_delimiter.join(
+                    filtered_predicted_first_parts) + '\n')
+                if filtered_original == filtered_predicted_first_parts or Common.unique(
+                        filtered_original) == Common.unique(
+                        filtered_predicted_first_parts) or ''.join(filtered_original) == ''.join(
+                    filtered_predicted_first_parts):
                     num_correct_predictions += 1
             else:
-                filtered_predicted = [Common.internal_delimiter.join(Common.filter_impossible_names(p)) for p in predicted]
+                filtered_predicted = [Common.internal_delimiter.join(Common.filter_impossible_names(p)) for p in
+                                      predicted]
 
                 true_ref = original_name
                 output_file.write('Original: ' + ' '.join(original_name_parts) + '\n')
                 for i, p in enumerate(filtered_predicted):
-                    output_file.write('\t@{}: {}'.format(i + 1, ' '.join(p.split(Common.internal_delimiter)))+ '\n')
+                    output_file.write('\t@{}: {}'.format(i + 1, ' '.join(p.split(Common.internal_delimiter))) + '\n')
                 if true_ref in filtered_predicted:
                     index_of_correct = filtered_predicted.index(true_ref)
                     update = np.concatenate(
@@ -265,25 +282,39 @@ class Model:
                     num_correct_predictions += update
         return num_correct_predictions
 
-    def update_per_subtoken_statistics(self, results, true_positive, false_positive, false_negative):
+    def update_per_subtoken_statistics(self, csv_writer, results, true_positive, false_positive, false_negative):
         for original_name, predicted in results:
             if self.config.BEAM_WIDTH > 0:
                 predicted = predicted[0]
             filtered_predicted_names = Common.filter_impossible_names(predicted)
             filtered_original_subtokens = Common.filter_impossible_names(original_name.split(Common.internal_delimiter))
-
+            row = [original_name] + [Common.internal_delimiter.join(filtered_predicted_names)]
             if ''.join(filtered_original_subtokens) == ''.join(filtered_predicted_names):
                 true_positive += len(filtered_original_subtokens)
+                row = row + ['1', len(filtered_original_subtokens), len(filtered_predicted_names),
+                             len(filtered_original_subtokens), '0', '0']
+                csv_writer.writerow(row)
                 continue
-
+            tp = 0
+            fp = 0
+            fn = 0
+            ost = 0
+            pst = 0
             for subtok in filtered_predicted_names:
                 if subtok in filtered_original_subtokens:
                     true_positive += 1
+                    tp += 1
                 else:
                     false_positive += 1
+                    fp += 1
+                pst += 1
             for subtok in filtered_original_subtokens:
                 if not subtok in filtered_predicted_names:
                     false_negative += 1
+                    fn += 1
+                ost += 1
+            row = row + ['0', ost, pst, tp, fp, fn]
+            csv_writer.writerow(row)
         return true_positive, false_positive, false_negative
 
     def print_hyperparams(self):
@@ -457,7 +488,7 @@ class Model:
                                                                       axis=-1))  # (batch, max_target_parts, dim * 2 + rnn_size)
             helper = tf.contrib.seq2seq.TrainingHelper(inputs=target_words_embedding,
                                                        sequence_length=tf.ones([batch_size], dtype=tf.int32) * (
-                                                           self.config.MAX_TARGET_PARTS + 1))
+                                                               self.config.MAX_TARGET_PARTS + 1))
 
             initial_state = decoder_cell.zero_state(batch_size, tf.float32).clone(cell_state=fake_encoder_state)
 

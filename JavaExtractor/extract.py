@@ -23,11 +23,12 @@ def ParallelExtractDir(args, dir):
 
 
 def ExtractFeaturesForDir(args, dir, prefix):
-    command = ['java', '-Xmx100g', '-XX:MaxNewSize=60g', '-cp', args.jar, 'JavaExtractor.App',
+    command = ['/home/glow250/miniconda3/envs/code2seq/bin/java', '-Xmx100g', '-XX:MaxNewSize=60g', '-cp', args.jar, 'JavaExtractor.App',
                '--max_path_length', str(args.max_path_length), '--max_path_width', str(args.max_path_width),
                '--dir', dir, '--num_threads', str(args.num_threads)]
+    command = ["/home/glow250/p4p/jdk-15.0.2/bin/java","-Dfile.encoding=UTF-8", "-classpath",
+               "/home/glow250/p4p/code2seq_pycharm/JavaExtractor/JPredict/TmeGvomlLI:/home/glow250/p4p/code2seq_pycharm/JavaExtractor/JPredict/1LhnIengfv/javaparser-core-3.0.0-alpha.4.jar:/home/glow250/p4p/code2seq_pycharm/JavaExtractor/JPredict/Bu1QAOsKUg/commons-io-1.3.2.jar:/home/glow250/p4p/code2seq_pycharm/JavaExtractor/JPredict/TGZBX6ihOZ/jackson-databind-2.9.10.4.jar:/home/glow250/p4p/code2seq_pycharm/JavaExtractor/JPredict/njeWuu15Lu/jackson-annotations-2.9.10.jar:/home/glow250/p4p/code2seq_pycharm/JavaExtractor/JPredict/iRyL0CJhjV/jackson-core-2.9.10.jar:/home/glow250/p4p/code2seq_pycharm/JavaExtractor/JPredict/tqDrtwI3fM/args4j-2.33.jar:/home/glow250/p4p/code2seq_pycharm/JavaExtractor/JPredict/kNeWOSM3fm/commons-lang3-3.5.jar:/home/glow250/p4p/code2seq_pycharm/JavaExtractor/JPredict/gCSKFNFmdW/gson-2.8.5.jar", "JavaExtractor.App", "--max_path_length", "8" ,"--max_path_width","2", "--dir", dir, "--num_threads", "1"]
 
-    # print command
     # os.system(command)
     kill = lambda process: process.kill()
     outputFileName = TMP_DIR + prefix + dir.split('/')[-1]
@@ -85,7 +86,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.file is not None:
-        command = 'java -cp ' + args.jar + ' JavaExtractor.App --max_path_length ' + \
+        command = '/home/glow250/miniconda3/envs/code2seq/bin/java -cp ' + args.jar + ' JavaExtractor.App --max_path_length ' + \
                   str(args.max_path_length) + ' --max_path_width ' + str(args.max_path_width) + ' --file ' + args.file
         os.system(command)
     elif args.dir is not None:

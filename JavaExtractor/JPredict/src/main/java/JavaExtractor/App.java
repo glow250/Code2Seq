@@ -17,6 +17,7 @@ public class App {
     private static CommandLineValues s_CommandLineValues;
 
     public static void main(String[] args) {
+//        System.out.println("Working Directory = " + System.getProperty("user.dir"));
         try {
             s_CommandLineValues = new CommandLineValues(args);
         } catch (CmdLineException e) {

@@ -1,3 +1,9 @@
-public String getName() {
-		return name;
-	}
+package sample;
+
+public class Customer {
+    private String name;
+
+    public String getName() {
+        return name.get();
+    }
+}

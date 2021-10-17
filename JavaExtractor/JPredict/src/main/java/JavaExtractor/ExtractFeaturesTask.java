@@ -43,6 +43,11 @@ class ExtractFeaturesTask implements Callable<Void> {
 
         String toPrint = featuresToString(features);
         if (toPrint.length() > 0) {
+            String[] check = toPrint.split("\n");
+            for (String method : check) {
+                int ast = method.split(" ").length - 1;
+                System.out.println(method.split(" ")[0] + ","+ast+","+this.filePath.toAbsolutePath());
+            }
             System.out.println(toPrint);
         }
     }
